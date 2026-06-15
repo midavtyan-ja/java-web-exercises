@@ -2,20 +2,36 @@ package com.bobocode;
 
 import com.bobocode.annotation.Trimmed;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.MethodInterceptor;
 
-/**
- * This is processor class implements {@link BeanPostProcessor}, looks for a beans where method parameters are marked with
- * {@link Trimmed} annotation, creates proxy of them, overrides methods and trims all {@link String} arguments marked with
- * {@link Trimmed}. For example if there is a string " Java   " as an input parameter it has to be automatically trimmed to "Java"
- * if parameter is marked with {@link Trimmed} annotation.
- * <p>
- *
- * Note! This bean is not marked as a {@link Component} to avoid automatic scanning, instead it should be created in
- * {@link StringTrimmingConfiguration} class which can be imported to a {@link Configuration} class by annotation
- * {@link EnableStringTrimming}
- */
-public class TrimmedAnnotationBeanPostProcessor {
-//todo: Implement TrimmedAnnotationBeanPostProcessor according to javadoc
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+
+public class TrimmedAnnotationBeanPostProcessor implements BeanPostProcessor {
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) {
+        boolean hasTrimmedParams = Arrays.stream(bean.getClass().getDeclaredMethods())
+                .flatMap(m -> Arrays.stream(m.getParameters()))
+                .anyMatch(p -> p.isAnnotationPresent(Trimmed.class));
+
+        if (!hasTrimmedParams) {
+            return bean;
+        }
+
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(bean.getClass());
+        enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
+            Parameter[] parameters = method.getParameters();
+            for (int i = 0; i < parameters.length; i++) {
+                if (parameters[i].isAnnotationPresent(Trimmed.class) && args[i] instanceof String) {
+                    args[i] = ((String) args[i]).trim();
+                }
+            }
+            return proxy.invokeSuper(obj, args);
+        });
+
+        return enhancer.create();
+    }
 }
