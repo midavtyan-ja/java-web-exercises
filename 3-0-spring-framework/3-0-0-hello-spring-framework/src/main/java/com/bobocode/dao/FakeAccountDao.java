@@ -16,9 +16,14 @@ import static java.util.stream.Collectors.toList;
  * Its bean is called "accountDao". And it uses constructor with explicit autowired annotation in order to inject
  * {@link TestDataGenerator} instance.
  */
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component("accountDao")
 public class FakeAccountDao implements AccountDao {
     private List<Account> accounts;
 
+    @Autowired
     public FakeAccountDao(TestDataGenerator testDataGenerator) {
         this.accounts = Stream.generate(testDataGenerator::generateAccount)
                 .limit(20)

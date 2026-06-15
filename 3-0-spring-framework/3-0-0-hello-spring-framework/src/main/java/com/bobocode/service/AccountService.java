@@ -12,6 +12,9 @@ import static java.util.Comparator.comparing;
  * Since it's a service that should be added to the application context, it is marked as Spring service. It order to get
  * {@link AccountDao} instances, it uses implicit constructor-based injection.
  */
+import org.springframework.stereotype.Service;
+
+@Service
 public class AccountService {
     private final AccountDao accountDao;
 
